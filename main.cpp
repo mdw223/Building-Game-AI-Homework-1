@@ -1,230 +1,213 @@
 #include <iostream>
+#include <vector>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/System.hpp>
 
-int main()
-{
-    int width = 640;
-    int height = 480;
+enum Direction { RIGHT = 0, DOWN = 1, LEFT = 2, UP = 3 };
+
+class Boid {
+    private:
+        sf::Sprite sprite;
+        Direction direction;
+        bool visible;
+        float speedH;
+        float speedW;
+        int windowWidth;
+        int windowHeight;
+
+        static std::string directionToString(Direction dir) {
+            switch (dir) {
+                case RIGHT: return "RIGHT";
+                case LEFT: return "LEFT";
+                case UP: return "UP";
+                case DOWN: return "DOWN";
+                default: return "UNKNOWN";
+            }
+        }
+
+    public:
+        Boid(const sf::Texture& texture, float speedH = 6.0f, float speedW = 8.0f, 
+            int winWidth = 640, int winHeight = 480) 
+            : sprite(texture), direction(RIGHT), visible(false), 
+            speedH(speedH), speedW(speedW), windowWidth(winWidth), windowHeight(winHeight) {
+            sprite.setPosition(0.0f, 0.0f);
+        }
+
+        void setVisible(bool vis) { visible = vis; }
+        bool isVisible() const { return visible; }
+        
+        void reset() {
+            sprite.setPosition(0.0f, 0.0f);
+            sprite.setRotation(0);
+            direction = RIGHT;
+            visible = false;
+        }
+
+        sf::Vector2f getPosition() const {
+            return sprite.getPosition();
+        }
+
+        void update() {
+            if (visible == false) return;
+
+            sf::FloatRect bounds = sprite.getGlobalBounds();
+            
+            switch (direction) {
+                case RIGHT:
+                    sprite.move(speedW, 0.0f);
+                    if (sprite.getPosition().x + bounds.width >= windowWidth) {
+                        direction = DOWN;
+                        sprite.setRotation(90);
+                    }
+                    break;
+                    
+                case DOWN:
+                    sprite.move(0.0f, speedH);
+                    if (sprite.getPosition().y + bounds.height >= windowHeight) {
+                        direction = LEFT;
+                        sprite.setRotation(180);
+                    }
+                    break;
+                    
+                case LEFT:
+                    sprite.move(-speedW, 0.0f);
+                    if (sprite.getPosition().x - bounds.width <= 0) {
+                        direction = UP;
+                        sprite.setRotation(270);
+                    }
+                    break;
+                    
+                case UP:
+                    sprite.move(0.0f, -speedH);
+                    break;
+            }
+        }
+
+        bool shouldSpawnNext() const {
+            return visible && direction == DOWN;
+        }
+
+        bool hasReachedTop() const {
+            return visible && direction == UP && sprite.getPosition().y <= 0;
+        }
+
+        void draw(sf::RenderWindow& window) {
+            if (visible) {
+                window.draw(sprite);
+            }
+        }
+
+        friend std::ostream& operator<<(std::ostream& os, const Boid& boid) {
+            sf::Vector2f position = boid.sprite.getPosition(); 
+            os << "Boid(Direction: " << directionToString(boid.direction) 
+            << ", Visible: " << std::boolalpha << boid.visible 
+            << ", Position: (" << position.x << ", " << position.y << "))";
+            return os;
+        }
+};
+
+class BoidSystem {
+    private:
+        std::vector<Boid> boids;
+        int updateCounter;
+        static const int UPDATE_FREQUENCY = 100;
+
+    public:
+        BoidSystem(const sf::Texture& texture, int numBoids = 4, 
+                int winWidth = 640, int winHeight = 480) : updateCounter(0) {
+            for (int i = 0; i < numBoids; ++i) {
+                boids.emplace_back(texture, 6.0f, 8.0f, winWidth, winHeight);
+            }
+
+            // First boid starts visible
+            if (boids.empty() == false) {
+                boids[0].setVisible(true);
+            }
+        }
+
+        void update() {
+            ++updateCounter;
+            
+            if (updateCounter % UPDATE_FREQUENCY == 0) {
+                // Check if we need to reset (last boid reached top)
+                if (boids.empty() == false && boids.back().hasReachedTop()) {
+                    resetAll();
+                    return;
+                }
+
+                printBoids(boids);
+
+                // Spawn next boids when current ones are ready
+                for (size_t i = 0; i < boids.size() - 1; ++i) {
+                    bool shouldSpawn = boids[i].shouldSpawnNext();
+                    bool nextVisible = boids[i + 1].isVisible();
+
+                    std::cout << "Boid " << i << ": shouldSpawnNext() = " << std::boolalpha << shouldSpawn 
+                            << ", Boid " << (i + 1) << ": isVisible() = " << nextVisible << std::endl;
+
+                    if (shouldSpawn && !nextVisible) {
+                        boids[i + 1].setVisible(true);
+                        std::cout << "Boid " << (i + 1) << " is now visible." << std::endl;
+                    }
+                }
+
+                // Update all boids
+                for (auto& boid : boids) {
+                    boid.update();
+                }
+            }
+        }
+
+        void resetAll() {
+            for (auto& boid : boids) {
+                boid.reset();
+            }
+            if (boids.empty() == false) {
+                boids[0].setVisible(true);
+            }
+        }
+
+        void draw(sf::RenderWindow& window) {
+            for (auto& boid : boids) {
+                boid.draw(window);
+            }
+        }
+
+        void printBoids(const std::vector<Boid>& boids) {
+            for (const auto& boid : boids) {
+                std::cout << boid << std::endl;
+            }
+        }
+
+};
+
+int main() {
+    const int width = 640;
+    const int height = 480;
     sf::RenderWindow window(sf::VideoMode(width, height), "Building Game AI Homework 1");
-    
-    // sf::CircleShape shape(5.f); // shape(radius)
-    // shape.setFillColor(sf::Color::Green);
-    // sf::RenderTexture renderTexture;
-    // renderTexture.create(10, 10);
-    // renderTexture.clear(sf::Color::Transparent);
-    // renderTexture.draw(shape);
-    // renderTexture.display();
-    // sf::Sprite topSprite(renderTexture.getTexture());
-    // topSprite.setPosition(0.f, 0.f);
 
     sf::Texture texture;
-    if (!texture.loadFromFile("boid-sm.png"))
-    {
-        exit(1);
+    if (texture.loadFromFile("boid-sm.png") == false) {
+        std::cerr << "Error loading texture!" << std::endl;
+        return 1;
     }
-    sf::Sprite sprite1(texture);
-    sprite1.setPosition(0.f, 0.f); // Start position
 
-    sf::Sprite sprite2(texture);
-    bool sprite2Visible = false;
+    BoidSystem boidSystem(texture, 4, width, height);
 
-    sf::Sprite sprite3(texture);
-    bool sprite3Visible = false;
-
-    sf::Sprite sprite4(texture);
-    bool sprite4Visible = false;
-
-
-    int direction1 = 0; // Movement direction: 0 = right, 1 = down, 2 = left, 3 = up
-    int direction2 = 0;
-    int direction3 = 0;
-    int direction4 = 0;
-    int iteration = 0;
-    float speedH = 6.f;
-    float speedW = 8.f;
-    while (window.isOpen()) 
-    {
+    while (window.isOpen()) {
         sf::Event event;
-        // checks for any pending events in the window's queue
-        // pollEvent() is non-blocking unlike waitEvent()
-        while (window.pollEvent(event)) 
-        {
-            if (event.type == sf::Event::Closed)
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
                 window.close();
-        }
-        // set the up the down and right to a number that works for both of them
-        if( iteration % 100 == 0) {
-
-            if (sprite4Visible && direction4 == 3) {
-                sprite4.move(0.f,-speedH);
-                if (sprite4.getPosition().y <= 0) { // restart
-                    direction1 = 0;
-                    sprite1.setPosition(0.f, 0.f);
-
-                    direction4 = 0;
-                    sprite4Visible = false;
-                    sprite4.setPosition(0.f, 0.f);
-                }
-            }
-
-            if (sprite3Visible && direction3 == 3) {
-                sprite3.move(0.f,-speedH);
-                if (sprite3.getPosition().y <= 0) { 
-                    sprite3Visible = false;
-                    direction3 = 0;
-                    sprite3.setPosition(0.f, 0.f);
-                }
-            }
-
-            if (sprite2Visible && direction2 == 3) {
-                sprite2.move(0.f,-speedH);
-                if (sprite2.getPosition().y <= 0) { 
-                    sprite2Visible = false;
-                    direction2 = 0;
-                    sprite2.setPosition(0.f, 0.f);
-                }
-            }
-
-            if (sprite4Visible && direction4 == 2) {
-                sprite4.move(-speedW,0.f);
-                if (sprite4.getPosition().x - sprite4.getGlobalBounds().width <= 0) {
-                    direction4 = 3;
-                    sprite4.setRotation(270);
-                }
-            }
-
-            if (sprite3Visible && direction3 == 2) {
-                sprite3.move(-speedW,0.f);
-                if (sprite3.getPosition().x - sprite3.getGlobalBounds().width <= 0) {
-                    direction3 = 3;
-                    sprite3.setRotation(270);
-                }
-            }
-
-            if (sprite2Visible && direction2 == 2) {
-                sprite2.move(-speedW,0.f);
-                if (sprite2.getPosition().x - sprite2.getGlobalBounds().width <= 0) {
-                    direction2 = 3;
-                    sprite2.setRotation(270);
-                }
-            }
-
-            if (sprite4Visible && direction4 == 1) {
-                sprite4.move(0.f,speedH);
-                if (sprite4.getPosition().y + sprite4.getGlobalBounds().height >= height) {
-                    direction4 = 2;
-                    sprite4.setRotation(180);
-                }
-                
-            }
-
-            if (sprite3Visible && direction3 == 1) {
-                sprite3.move(0.f,speedH);
-                if (sprite4Visible == false) {
-                    sprite4Visible = true;
-                    sprite4.setPosition(0.f, 0.f);
-                }
-                if (sprite3.getPosition().y + sprite3.getGlobalBounds().height >= height) {
-                    direction3 = 2;
-                    sprite3.setRotation(180);
-                }
-                
-            }
-
-            if (sprite2Visible && direction2 == 1) {
-                sprite2.move(0.f,speedH);
-                if (sprite3Visible == false) {
-                    sprite3Visible = true;
-                    sprite3.setPosition(0.f, 0.f);
-                }
-                if (sprite2.getPosition().y + sprite2.getGlobalBounds().height >= height) {
-                    direction2 = 2;
-                    sprite2.setRotation(180);
-                }
-                
-            }
-
-            if (sprite4Visible && direction4 == 0) {
-                sprite4.move(speedW, 0.f);
-                if (sprite4.getPosition().x + sprite4.getGlobalBounds().width >= width) {
-                    direction4 = 1;
-                    sprite4.setRotation(90);
-                }
-            }
-
-            if (sprite3Visible == true && direction3 == 0) {
-                sprite3.move(speedW, 0.f);
-                if (sprite3.getPosition().x + sprite3.getGlobalBounds().width >= width) {
-                    direction3 = 1;
-                    sprite3.setRotation(90);
-                }
-            }
-
-            if (sprite2Visible && direction2 == 0) {
-                sprite2.move(speedW, 0.f);
-                if (sprite2.getPosition().x + sprite2.getGlobalBounds().width >= width) {
-                    direction2 = 1;
-                    sprite2.setRotation(90);
-                }
-            }
-
-            
-
-            // will start moving right: direction = 0
-            switch (direction1) {
-                case 0: // right
-                    sprite1.move(speedW, 0.f);
-                    if (sprite1.getPosition().x + sprite1.getGlobalBounds().width >= width) {
-                        direction1 = 1;
-                        sprite1.setRotation(90);
-
-                        sprite2Visible = true;
-                        sprite2.setPosition(0.f, 0.f);
-                    }
-                    break;
-                case 1: // down
-                    sprite1.move(0.f,speedH);
-                    if (sprite1.getPosition().y + sprite1.getGlobalBounds().height >= height) {
-                        direction1 = 2;
-                        sprite1.setRotation(180);
-                    }
-                    break;
-                case 2: // left
-                    sprite1.move(-speedW,0.f);
-                    if (sprite1.getPosition().x - sprite1.getGlobalBounds().width <= 0) {
-                        direction1 = 3;
-                        sprite1.setRotation(270);
-                    }
-                    break;
-                case 3: // up
-                    sprite1.move(0.f,-speedH);
-                    break;
             }
         }
-            
-        
-        
-        
-        /* The window is cleared with a white color (RGBA: 255, 255, 255, 0). 
-        The last value (0) indicates full transparency, which may not be visible 
-        */
-        window.clear(sf::Color(255,255,255,0));
-        window.draw(sprite1); // The sprite is drawn onto the window.
-        if (sprite2Visible) {
-            window.draw(sprite2);
-        }
-        if (sprite3Visible) {
-            window.draw(sprite3);
-        }
-        if (sprite4Visible) {
-            window.draw(sprite4);
-        }
-        window.display(); // The display is updated to show the new frame.
-        
-        ++iteration;
 
+        boidSystem.update();
+
+        window.clear(sf::Color(255, 255, 255, 0));
+        boidSystem.draw(window);
+        window.display();
     }
 
     return 0;
