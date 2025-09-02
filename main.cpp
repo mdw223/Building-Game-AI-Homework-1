@@ -33,10 +33,14 @@ int main()
     sf::Sprite sprite3(texture);
     bool sprite3Visible = false;
 
+    sf::Sprite sprite4(texture);
+    bool sprite4Visible = false;
+
 
     int direction1 = 0; // Movement direction: 0 = right, 1 = down, 2 = left, 3 = up
     int direction2 = 0;
     int direction3 = 0;
+    int direction4 = 0;
     int iteration = 0;
     float speedH = 6.f;
     float speedW = 8.f;
@@ -53,16 +57,101 @@ int main()
         // set the up the down and right to a number that works for both of them
         if( iteration % 100 == 0) {
 
+            if (sprite4Visible && direction4 == 3) {
+                sprite4.move(0.f,-speedH);
+                if (sprite4.getPosition().y <= 0) { // restart
+                    direction1 = 0;
+                    direction2 = 0;
+                    direction3 = 0;
+                    direction4 = 0;
+                    sprite2Visible = false;
+                    sprite3Visible = false;
+                    sprite4Visible = false;
+                    sprite1.setPosition(0.f, 0.f);
+                }
+            }
+
+            if (sprite3Visible && direction3 == 3) {
+                sprite3.move(0.f,-speedH);
+            }
+
+            if (sprite2Visible && direction2 == 3) {
+                sprite2.move(0.f,-speedH);
+            }
+
+            if (sprite4Visible && direction4 == 2) {
+                sprite4.move(-speedW,0.f);
+                if (sprite4.getPosition().x - sprite4.getGlobalBounds().width <= 0) {
+                    direction4 = 3;
+                    sprite4.setRotation(270);
+                }
+            }
+
+            if (sprite3Visible && direction3 == 2) {
+                sprite3.move(-speedW,0.f);
+                if (sprite3.getPosition().x - sprite3.getGlobalBounds().width <= 0) {
+                    direction3 = 3;
+                    sprite3.setRotation(270);
+                }
+            }
+
+            if (sprite2Visible && direction2 == 2) {
+                sprite2.move(-speedW,0.f);
+                if (sprite2.getPosition().x - sprite2.getGlobalBounds().width <= 0) {
+                    direction2 = 3;
+                    sprite2.setRotation(270);
+                }
+            }
+
+            if (sprite4Visible && direction4 == 1) {
+                sprite4.move(0.f,speedH);
+                if (sprite4.getPosition().y + sprite4.getGlobalBounds().height >= height) {
+                    direction4 = 2;
+                    sprite4.setRotation(180);
+                }
+                
+            }
+
+            if (sprite3Visible && direction3 == 1) {
+                sprite3.move(0.f,speedH);
+                if (sprite4Visible == false) {
+                    sprite4Visible = true;
+                    sprite4.setPosition(0.f, 0.f);
+                }
+                if (sprite3.getPosition().y + sprite3.getGlobalBounds().height >= height) {
+                    direction3 = 2;
+                    sprite3.setRotation(180);
+                }
+                
+            }
+
             if (sprite2Visible && direction2 == 1) {
                 sprite2.move(0.f,speedH);
                 if (sprite3Visible == false) {
                     sprite3Visible = true;
                     sprite3.setPosition(0.f, 0.f);
                 }
+                if (sprite2.getPosition().y + sprite2.getGlobalBounds().height >= height) {
+                    direction2 = 2;
+                    sprite2.setRotation(180);
+                }
                 
             }
+
+            if (sprite4Visible && direction4 == 0) {
+                sprite4.move(speedW, 0.f);
+                if (sprite4.getPosition().x + sprite4.getGlobalBounds().width >= width) {
+                    direction4 = 1;
+                    sprite4.setRotation(90);
+                }
+            }
+
             if (sprite3Visible == true && direction3 == 0) {
                 sprite3.move(speedW, 0.f);
+                if (sprite3.getPosition().x + sprite3.getGlobalBounds().width >= width) {
+                    direction3 = 1;
+                    sprite3.setRotation(90);
+                }
             }
 
             if (sprite2Visible && direction2 == 0) {
@@ -103,10 +192,6 @@ int main()
                     break;
                 case 3: // up
                     sprite1.move(0.f,-speedH);
-                    if (sprite1.getPosition().y - sprite1.getGlobalBounds().height <= 0) {
-                        direction1 = 0;
-                        sprite1.setRotation(0);
-                    }
                     break;
             }
         }
@@ -125,7 +210,9 @@ int main()
         if (sprite3Visible) {
             window.draw(sprite3);
         }
-        //window.draw(topSprite);
+        if (sprite4Visible) {
+            window.draw(sprite4);
+        }
         window.display(); // The display is updated to show the new frame.
         
         ++iteration;
