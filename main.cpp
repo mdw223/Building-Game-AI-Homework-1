@@ -61,22 +61,30 @@ int main()
                 sprite4.move(0.f,-speedH);
                 if (sprite4.getPosition().y <= 0) { // restart
                     direction1 = 0;
-                    direction2 = 0;
-                    direction3 = 0;
-                    direction4 = 0;
-                    sprite2Visible = false;
-                    sprite3Visible = false;
-                    sprite4Visible = false;
                     sprite1.setPosition(0.f, 0.f);
+
+                    direction4 = 0;
+                    sprite4Visible = false;
+                    sprite4.setPosition(0.f, 0.f);
                 }
             }
 
             if (sprite3Visible && direction3 == 3) {
                 sprite3.move(0.f,-speedH);
+                if (sprite3.getPosition().y <= 0) { 
+                    sprite3Visible = false;
+                    direction3 = 0;
+                    sprite3.setPosition(0.f, 0.f);
+                }
             }
 
             if (sprite2Visible && direction2 == 3) {
                 sprite2.move(0.f,-speedH);
+                if (sprite2.getPosition().y <= 0) { 
+                    sprite2Visible = false;
+                    direction2 = 0;
+                    sprite2.setPosition(0.f, 0.f);
+                }
             }
 
             if (sprite4Visible && direction4 == 2) {
