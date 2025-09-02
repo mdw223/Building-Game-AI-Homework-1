@@ -35,10 +35,11 @@ int main()
 
 
     int direction1 = 0; // Movement direction: 0 = right, 1 = down, 2 = left, 3 = up
-    float speed = 5.f; // Speed of movement
     int direction2 = 0;
     int direction3 = 0;
     int iteration = 0;
+    float speedH = 6.f;
+    float speedW = 8.f;
     while (window.isOpen()) 
     {
         sf::Event event;
@@ -49,11 +50,11 @@ int main()
             if (event.type == sf::Event::Closed)
                 window.close();
         }
-
+        // set the up the down and right to a number that works for both of them
         if( iteration % 100 == 0) {
 
             if (sprite2Visible && direction2 == 1) {
-                sprite2.move(0.f,speed);
+                sprite2.move(0.f,speedH);
                 if (sprite3Visible == false) {
                     sprite3Visible = true;
                     sprite3.setPosition(0.f, 0.f);
@@ -61,11 +62,11 @@ int main()
                 
             }
             if (sprite3Visible == true && direction3 == 0) {
-                sprite3.move(speed, 0.f);
+                sprite3.move(speedW, 0.f);
             }
 
             if (sprite2Visible && direction2 == 0) {
-                sprite2.move(speed, 0.f);
+                sprite2.move(speedW, 0.f);
                 if (sprite2.getPosition().x + sprite2.getGlobalBounds().width >= width) {
                     direction2 = 1;
                     sprite2.setRotation(90);
@@ -77,7 +78,7 @@ int main()
             // will start moving right: direction = 0
             switch (direction1) {
                 case 0: // right
-                    sprite1.move(speed, 0.f);
+                    sprite1.move(speedW, 0.f);
                     if (sprite1.getPosition().x + sprite1.getGlobalBounds().width >= width) {
                         direction1 = 1;
                         sprite1.setRotation(90);
@@ -87,21 +88,21 @@ int main()
                     }
                     break;
                 case 1: // down
-                    sprite1.move(0.f,speed);
+                    sprite1.move(0.f,speedH);
                     if (sprite1.getPosition().y + sprite1.getGlobalBounds().height >= height) {
                         direction1 = 2;
                         sprite1.setRotation(180);
                     }
                     break;
                 case 2: // left
-                    sprite1.move(-speed,0.f);
+                    sprite1.move(-speedW,0.f);
                     if (sprite1.getPosition().x - sprite1.getGlobalBounds().width <= 0) {
                         direction1 = 3;
                         sprite1.setRotation(270);
                     }
                     break;
                 case 3: // up
-                    sprite1.move(0.f,-speed);
+                    sprite1.move(0.f,-speedH);
                     if (sprite1.getPosition().y - sprite1.getGlobalBounds().height <= 0) {
                         direction1 = 0;
                         sprite1.setRotation(0);
