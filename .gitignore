@@ -1,0 +1,6 @@
+*.o
+/sfml-test
+/Makefile-old.txt
+main
+main.o
+settings.json
