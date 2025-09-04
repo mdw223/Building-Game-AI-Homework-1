@@ -1,5 +1,6 @@
-# make
-# make clean
+# make (to build)
+# make clean (to clean)
+# ./main (to run)
 
 rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 src := $(call rwildcard,./,*.cpp)
