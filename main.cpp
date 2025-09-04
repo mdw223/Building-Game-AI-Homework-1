@@ -3,6 +3,8 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/System.hpp>
+#include <thread> // FROM CHATGPT
+#include <chrono> // FROM CHATGPT
 
 enum Direction { RIGHT = 0, DOWN = 1, LEFT = 2, UP = 3 };
 
@@ -10,7 +12,7 @@ class Boid {
     private:
         sf::Sprite sprite;
         Direction direction;
-        bool visible;
+        bool isVisible;
         float speedH;
         float speedW;
         int windowWidth;
@@ -22,34 +24,35 @@ class Boid {
                 case LEFT: return "LEFT";
                 case UP: return "UP";
                 case DOWN: return "DOWN";
-                default: return "UNKNOWN";
+                default: return "ERROR";
             }
         }
 
     public:
-        Boid(const sf::Texture& texture, float speedH = 6.0f, float speedW = 8.0f, 
+        Boid(const sf::Texture& texture, float speedH = 30.0f, float speedW = 40.0f, 
             int winWidth = 640, int winHeight = 480) 
-            : sprite(texture), direction(RIGHT), visible(false), 
+            : sprite(texture), direction(RIGHT), isVisible(false), 
             speedH(speedH), speedW(speedW), windowWidth(winWidth), windowHeight(winHeight) {
             sprite.setPosition(0.0f, 0.0f);
         }
 
-        void setVisible(bool vis) { visible = vis; }
-        bool isVisible() const { return visible; }
+        void setIsVisible(bool visibility) { isVisible = visibility; }
+        bool getIsVisible() const { return isVisible; }
         
         void reset() {
             sprite.setPosition(0.0f, 0.0f);
             sprite.setRotation(0);
             direction = RIGHT;
-            visible = false;
+            isVisible = false;
         }
-
+        
+        // is read only
         sf::Vector2f getPosition() const {
             return sprite.getPosition();
         }
 
         void update() {
-            if (visible == false) return;
+            if (isVisible == false) return;
 
             sf::FloatRect bounds = sprite.getGlobalBounds();
             
@@ -84,71 +87,82 @@ class Boid {
             }
         }
 
-        bool shouldSpawnNext() const {
-            return visible && direction == DOWN;
+        bool shouldCreateNewBoid() const {
+            return isVisible && direction == DOWN;
         }
 
         bool hasReachedTop() const {
-            return visible && direction == UP && sprite.getPosition().y <= 0;
+            return isVisible && direction == UP && sprite.getPosition().y <= 0;
         }
 
+        // & : pass by reference so it can be updated
         void draw(sf::RenderWindow& window) {
-            if (visible) {
+            if (isVisible) {
                 window.draw(sprite);
             }
         }
 
-        friend std::ostream& operator<<(std::ostream& os, const Boid& boid) {
-            sf::Vector2f position = boid.sprite.getPosition(); 
-            os << "Boid(Direction: " << directionToString(boid.direction) 
-            << ", Visible: " << std::boolalpha << boid.visible 
-            << ", Position: (" << position.x << ", " << position.y << "))";
-            return os;
-        }
+        // friend std::ostream& operator<<(std::ostream& os, const Boid& boid) {
+        //     sf::Vector2f position = boid.sprite.getPosition(); 
+        //     os << "Boid(Direction: " << directionToString(boid.direction) 
+        //     << ", isVisible: " << std::boolalpha << boid.isVisible 
+        //     << ", Position: (" << position.x << ", " << position.y << "))";
+        //     return os;
+        // }
 };
 
-class BoidSystem {
+/**
+ * Manages all the boids in a vector to be able to update, create, reset, and draw multiple boids at a time
+ */
+class BoidManager {
     private:
-        std::vector<Boid> boids;
+        /**
+         * vector ensures elements stored in continguous memory, faster
+         * auto resizing
+         */
+        std::vector<Boid> boids; 
         int updateCounter;
         static const int UPDATE_FREQUENCY = 100;
 
     public:
-        BoidSystem(const sf::Texture& texture, int numBoids = 4, 
+        BoidManager(const sf::Texture& texture, int numBoids = 4, 
                 int winWidth = 640, int winHeight = 480) : updateCounter(0) {
             for (int i = 0; i < numBoids; ++i) {
-                boids.emplace_back(texture, 6.0f, 8.0f, winWidth, winHeight);
+                // constructs new element at end of vector using args, more efficient than push_back()
+                boids.emplace_back(texture, 6.0f, 8.0f, winWidth, winHeight); 
             }
 
             // First boid starts visible
             if (boids.empty() == false) {
-                boids[0].setVisible(true);
+                boids[0].setIsVisible(true);
             }
         }
 
         void update() {
             ++updateCounter;
             
+            // execute every 100 calls
             if (updateCounter % UPDATE_FREQUENCY == 0) {
-                // Check if we need to reset (last boid reached top)
+                // Check if we need to reset the game, only if the last boid reached top
                 if (boids.empty() == false && boids.back().hasReachedTop()) {
+                    std::this_thread::sleep_for(std::chrono::seconds(2)); // FROM CHATGPT
                     resetAll();
-                    return;
+                    return; // dont do anyting else for this iteration
                 }
 
-                printBoids(boids);
+                //printBoids(boids); // logging
 
                 // Spawn next boids when current ones are ready
                 for (size_t i = 0; i < boids.size() - 1; ++i) {
-                    bool shouldSpawn = boids[i].shouldSpawnNext();
-                    bool nextVisible = boids[i + 1].isVisible();
+                    bool shouldCreateNewBoid = boids[i].shouldCreateNewBoid();
+                    bool nextVisible = boids[i + 1].getIsVisible();
 
-                    std::cout << "Boid " << i << ": shouldSpawnNext() = " << std::boolalpha << shouldSpawn 
-                            << ", Boid " << (i + 1) << ": isVisible() = " << nextVisible << std::endl;
+                    // std::cout << "Boid " << i << ": shouldCreateNewBoid() = " << std::boolalpha << shouldCreateNewBoid 
+                    //         << ", Boid " << (i + 1) << ": getIsVisible() = " << nextVisible << std::endl; // logging
 
-                    if (shouldSpawn && !nextVisible) {
-                        boids[i + 1].setVisible(true);
-                        std::cout << "Boid " << (i + 1) << " is now visible." << std::endl;
+                    if (shouldCreateNewBoid && !nextVisible) {
+                        boids[i + 1].setIsVisible(true);
+                        // std::cout << "Boid " << (i + 1) << " is now visible." << std::endl; // logging
                     }
                 }
 
@@ -164,7 +178,7 @@ class BoidSystem {
                 boid.reset();
             }
             if (boids.empty() == false) {
-                boids[0].setVisible(true);
+                boids[0].setIsVisible(true);
             }
         }
 
@@ -174,11 +188,12 @@ class BoidSystem {
             }
         }
 
-        void printBoids(const std::vector<Boid>& boids) {
-            for (const auto& boid : boids) {
-                std::cout << boid << std::endl;
-            }
-        }
+        // Logging
+        // void printBoids(const std::vector<Boid>& boids) { 
+        //     for (const auto& boid : boids) {
+        //         std::cout << boid << std::endl; 
+        //     }
+        // }
 
 };
 
@@ -193,7 +208,7 @@ int main() {
         return 1;
     }
 
-    BoidSystem boidSystem(texture, 4, width, height);
+    BoidManager boidManager(texture, 4, width, height);
 
     while (window.isOpen()) {
         sf::Event event;
@@ -203,10 +218,10 @@ int main() {
             }
         }
 
-        boidSystem.update();
+        boidManager.update();
 
         window.clear(sf::Color(255, 255, 255, 0));
-        boidSystem.draw(window);
+        boidManager.draw(window);
         window.display();
     }
 
