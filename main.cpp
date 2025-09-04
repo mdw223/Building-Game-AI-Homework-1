@@ -3,8 +3,8 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/System.hpp>
-#include <thread> // FROM CHATGPT
-#include <chrono> // FROM CHATGPT
+#include <thread> // This was generated with the help of ChatGPT
+#include <chrono> // This was generated with the help of ChatGPT
 
 enum Direction { RIGHT = 0, DOWN = 1, LEFT = 2, UP = 3 };
 
@@ -18,18 +18,9 @@ class Boid {
         int windowWidth;
         int windowHeight;
 
-        static std::string directionToString(Direction dir) {
-            switch (dir) {
-                case RIGHT: return "RIGHT";
-                case LEFT: return "LEFT";
-                case UP: return "UP";
-                case DOWN: return "DOWN";
-                default: return "ERROR";
-            }
-        }
-
     public:
-        Boid(const sf::Texture& texture, float speedH = 30.0f, float speedW = 40.0f, 
+        // This constructor was generated with the help of ChatGPT
+        Boid(const sf::Texture& texture, float speedH = 36.0f, float speedW = 48.0f, 
             int winWidth = 640, int winHeight = 480) 
             : sprite(texture), direction(RIGHT), isVisible(false), 
             speedH(speedH), speedW(speedW), windowWidth(winWidth), windowHeight(winHeight) {
@@ -101,14 +92,6 @@ class Boid {
                 window.draw(sprite);
             }
         }
-
-        // friend std::ostream& operator<<(std::ostream& os, const Boid& boid) {
-        //     sf::Vector2f position = boid.sprite.getPosition(); 
-        //     os << "Boid(Direction: " << directionToString(boid.direction) 
-        //     << ", isVisible: " << std::boolalpha << boid.isVisible 
-        //     << ", Position: (" << position.x << ", " << position.y << "))";
-        //     return os;
-        // }
 };
 
 /**
@@ -116,15 +99,13 @@ class Boid {
  */
 class BoidManager {
     private:
-        /**
-         * vector ensures elements stored in continguous memory, faster
-         * auto resizing
-         */
+        // vector ensures elements stored in continguous memory, faster, auto resizing
         std::vector<Boid> boids; 
         int updateCounter;
         static const int UPDATE_FREQUENCY = 100;
 
     public:
+        // This constructor was generated with the help of ChatGPT
         BoidManager(const sf::Texture& texture, int numBoids = 4, 
                 int winWidth = 640, int winHeight = 480) : updateCounter(0) {
             for (int i = 0; i < numBoids; ++i) {
@@ -145,24 +126,18 @@ class BoidManager {
             if (updateCounter % UPDATE_FREQUENCY == 0) {
                 // Check if we need to reset the game, only if the last boid reached top
                 if (boids.empty() == false && boids.back().hasReachedTop()) {
-                    std::this_thread::sleep_for(std::chrono::seconds(2)); // FROM CHATGPT
+                    std::this_thread::sleep_for(std::chrono::seconds(2)); // This was generated with the help of ChatGPT
                     resetAll();
                     return; // dont do anyting else for this iteration
                 }
-
-                //printBoids(boids); // logging
 
                 // Spawn next boids when current ones are ready
                 for (size_t i = 0; i < boids.size() - 1; ++i) {
                     bool shouldCreateNewBoid = boids[i].shouldCreateNewBoid();
                     bool nextVisible = boids[i + 1].getIsVisible();
 
-                    // std::cout << "Boid " << i << ": shouldCreateNewBoid() = " << std::boolalpha << shouldCreateNewBoid 
-                    //         << ", Boid " << (i + 1) << ": getIsVisible() = " << nextVisible << std::endl; // logging
-
                     if (shouldCreateNewBoid && !nextVisible) {
                         boids[i + 1].setIsVisible(true);
-                        // std::cout << "Boid " << (i + 1) << " is now visible." << std::endl; // logging
                     }
                 }
 
@@ -187,13 +162,6 @@ class BoidManager {
                 boid.draw(window);
             }
         }
-
-        // Logging
-        // void printBoids(const std::vector<Boid>& boids) { 
-        //     for (const auto& boid : boids) {
-        //         std::cout << boid << std::endl; 
-        //     }
-        // }
 
 };
 
