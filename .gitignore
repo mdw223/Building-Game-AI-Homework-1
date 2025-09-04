@@ -3,4 +3,5 @@
 /Makefile-old.txt
 main
 main.o
-settings.json
+/settings.json
+sfml-test
