@@ -1,3 +1,8 @@
+/**
+ * @author Malik Wensman
+ * @date September 5, 2025 
+ */
+
 #include <iostream>
 #include <vector>
 #include <SFML/Graphics.hpp>
@@ -20,7 +25,7 @@ class Boid {
 
     public:
         // This constructor was generated with the help of ChatGPT
-        Boid(const sf::Texture& texture, float speedH = 36.0f, float speedW = 48.0f, 
+        Boid(const sf::Texture& texture, float speedH = 6.0f, float speedW = 8.0f, 
             int winWidth = 640, int winHeight = 480) 
             : sprite(texture), direction(RIGHT), isVisible(false), 
             speedH(speedH), speedW(speedW), windowWidth(winWidth), windowHeight(winHeight) {
@@ -176,7 +181,28 @@ int main() {
         return 1;
     }
 
-    BoidManager boidManager(texture, 4, width, height);
+    // this button was generated with the help of ChatGPT
+    sf::Font font;
+    if (!font.loadFromFile("arial.ttf")) {
+        std::cerr << "Warning: Could not load font. Button text may not display properly." << std::endl;
+    }
+    sf::RectangleShape button(sf::Vector2f(150, 50));
+    button.setPosition(width/2 - 100, height - 240);
+    button.setFillColor(sf::Color::Green);
+    button.setOutlineThickness(2);
+    button.setOutlineColor(sf::Color::Black);
+    sf::Text buttonText("Click for more boids", font, 16);
+    buttonText.setFillColor(sf::Color::Black);
+    buttonText.setPosition(width/2 - 90, height - 240);
+
+    // part 2
+    bool isSimple = true;
+    sf::Sprite sprite(texture);
+    sprite.setPosition(0.f, 0.f);
+    int iteration = 0;
+
+    // part 3
+    BoidManager* boidManager = nullptr;
 
     while (window.isOpen()) {
         sf::Event event;
@@ -186,12 +212,40 @@ int main() {
             }
         }
 
-        boidManager.update();
+        // This button event was generated with the help of ChatGPT
+        if (event.type == sf::Event::MouseButtonPressed && isSimple) {
+                if (event.mouseButton.button == sf::Mouse::Left) {
+                    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+                    sf::Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+                    
+                    if (button.getGlobalBounds().contains(mousePosF)) {
+                        isSimple = false;
+                        boidManager = new BoidManager(texture, 4, width, height);
+                    }
+                }
+            }
 
-        window.clear(sf::Color(255, 255, 255, 0));
-        boidManager.draw(window);
-        window.display();
+        if(isSimple) {
+            if (iteration % 100 == 0) {
+                sprite.move(10.0f, 0.0f);
+                if (sprite.getPosition().x + sprite.getGlobalBounds().width >= width) {
+                    sprite.setPosition(0.f, 0.f);
+                }
+            }
+            window.clear(sf::Color(255, 255, 255, 0));
+            window.draw(sprite);
+            window.draw(button);
+            window.draw(buttonText);
+            window.display();
+            iteration++;
+        } else {
+            boidManager->update();
+            window.clear(sf::Color(255, 255, 255, 0));
+            boidManager->draw(window);
+            window.display();
+        }
     }
 
+    delete boidManager;
     return 0;
 }
